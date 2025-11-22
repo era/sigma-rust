@@ -425,7 +425,7 @@ impl CorrelationEngine {
     /// Process events against correlation rules
     pub fn process_events<'a>(
         &'a self,
-        events: &'a [TimestampedEvent],
+        events: std::slice::Iter<'a, TimestampedEvent<'a>>,
     ) -> Result<Vec<CorrelationResult<'a>>> {
         // Parallelize the processing of each rule
         let all_results: Result<Vec<Vec<CorrelationResult<'a>>>> = self
@@ -434,7 +434,7 @@ impl CorrelationEngine {
             .map(|rule| {
                 // Filter events that match the referenced rules
                 let matching_events: Vec<&TimestampedEvent> = events
-                    .iter()
+                    .clone()
                     .filter(|event| rule.correlation.rules.contains(&event.rule.title))
                     .collect();
 

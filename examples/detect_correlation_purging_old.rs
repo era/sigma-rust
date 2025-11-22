@@ -18,7 +18,7 @@ correlation:
     - TargetUserName
   timespan: 1m
   condition:
-    gte: 3
+    gte: 2
 tags:
   - brute_force
 ---
@@ -64,7 +64,8 @@ detection:
     let events = events_from_json(events_str)?;
 
     println!("Step 4: Finding events that match base rules...");
-    let mut matched_events = Vec::new();
+    let mut matched_events: Vec<TimestampedEvent> = Vec::new();
+
     for event in &events {
         for rule in engine.base_rules.values() {
             if rule.is_match(event) {
@@ -85,6 +86,13 @@ detection:
     }
 
     println!("Step 5: Running correlation analysis...");
+    let deadline = DateTime::parse_from_rfc3339(&"2025-01-01T00:00:00Z")?;
+    matched_events.sort_by(|a, b| b.timestamp.cmp(&a.timestamp));
+    if let Some(i) = matched_events.iter().position(|e| e.timestamp <= deadline) {
+        println!("found the first expired event in position: {i}, should keep the array from 0 to {i}.");
+        matched_events.truncate(i);
+    }
+
     let results = engine.process_events(matched_events.iter())?;
     println!("================================");
     for result in results.iter() {
